@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Countdown!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        .dancing-font {
+            font-family: 'Dancing Script', cursive;
+        }
+        
+        .moving-bg {
+            background: linear-gradient(270deg, #ff9a9e, #fecfef, #a8edea, #fed6e3, #ffecd2, #fcb69f);
+            background-size: 1200% 1200%;
+            animation: gradientMove 20s ease infinite;
+        }
+        
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .floating-hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .heart {
+            position: absolute;
+            font-size: 20px;
+            color: rgba(255, 182, 193, 0.7);
+            animation: floatUp 8s infinite ease-in-out;
+        }
+        
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .floating-balloons {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .balloon {
+            position: absolute;
+            font-size: 30px;
+            animation: floatBalloon 12s infinite ease-in-out;
+        }
+        
+        @keyframes floatBalloon {
+            0% {
+                transform: translateY(100vh) translateX(0px);
+                opacity: 1;
+            }
+            50% {
+                transform: translateY(50vh) translateX(30px);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100px) translateX(-20px);
+                opacity: 0;
+            }
+        }
+        
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .bounce {
+            animation: bounce 3s ease infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .photo-frame {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .photo-frame:hover {
+            transform: scale(1.03);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .glow-text {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+        }
+        
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            animation: sparkle 2s infinite;
+        }
+        
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+        
+        .message-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .content-wrapper {
+            position: relative;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function CountdownApp() {
+            const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+            const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+            const [hearts, setHearts] = useState([]);
+            const [balloons, setBalloons] = useState([]);
+            const [sparkles, setSparkles] = useState([]);
+            const [lastDayCount, setLastDayCount] = useState(null);
+            
+            // Sample photos for each day (replace with your actual photos)
+            const dailyPhotos = [
+                "image0.png",
+                "image1.jpg",
+                "image2.jpg",
+                "image3.jpg",
+                "image4.jpg",
+                "image5.jpg",
+                "image6.jpg",
+                "image7.jpg",
+                "image8.jpg",
+                "image9.jpg",
+                "image10.jpg",
+                "image11.png",
+                "image12.jpg",
+                
+            ];
+            
+            // Daily messages for each day remaining
+            const dailyMessages = [
+                "🎉 IT'S YOUR SPECIAL DAY! Happy Birthday! 🎂",
+                "🌟 Tomorrow is the big day! Get ready to celebrate! 🎈",
+                "💫 Just 2 days left! The excitement is building! 🎊",
+                "✨ 3 days to go! Time to start the party planning! 🎁",
+                "🌈 4 days remaining! Your birthday week has begun! 🎪",
+                "🎭 5 days left! The countdown is getting real! 🎨",
+                "🎪 6 days to go! One week until your special day! 🎠",
+                "🌺 A week left! Time to make those birthday wishes! 🌸",
+                "🎨 8 days remaining! Let the celebration preparations begin! 🎯",
+                "🎯 9 days to go! Single digits now! 🎲",
+                "🎲 10 days left! Double digits no more! 🎪"
+            ];
+
+            function calculateTimeLeft() {
+                const now = new Date();
+                const targetDate = new Date(now.getFullYear(), 6, 26); // July 26 (month is 0-indexed)
+                
+                // If target date has passed this year, set it for next year
+                if (now > targetDate) {
+                    targetDate.setFullYear(targetDate.getFullYear() + 1);
+                }
+                
+                const difference = targetDate - now;
+                
+                return {
+                    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                    hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+                    minutes: Math.floor((difference / 1000 / 60) % 60),
+                    seconds: Math.floor((difference / 1000) % 60),
+                    total: difference
+                };
+            }
+
+            // Check if it's July 26th at 12 AM and redirect
+            function checkForRedirect() {
+                const now = new Date();
+                const targetDate = new Date(now.getFullYear(), 6, 26); // July 26
+                
+                if (now.getMonth() === 6 && now.getDate() === 26 && now.getHours() === 0 && now.getMinutes() === 0) {
+                    window.location.href = "https://gauravunofficial31.github.io/general/";
+                }
+            }
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    const newTimeLeft = calculateTimeLeft();
+                    setTimeLeft(newTimeLeft);
+                    
+                    // Check for redirect every minute
+                    checkForRedirect();
+                    
+                    // Only change photo when days actually change
+                    if (lastDayCount !== null && newTimeLeft.days !== lastDayCount) {
+                        setCurrentPhotoIndex(prev => (prev + 1) % dailyPhotos.length);
+                    }
+                    setLastDayCount(newTimeLeft.days);
+                }, 1000);
+                
+                return () => clearInterval(timer);
+            }, [lastDayCount]);
+
+            // Create floating hearts
+            useEffect(() => {
+                const createHeart = () => {
+                    const heart = {
+                        id: Date.now() + Math.random(),
+                        left: Math.random() * 100,
+                        animationDelay: Math.random() * 2,
+                        animationDuration: 6 + Math.random() * 4
+                    };
+                    setHearts(prev => [...prev.slice(-5), heart]);
+                };
+
+                const heartInterval = setInterval(createHeart, 2000);
+                return () => clearInterval(heartInterval);
+            }, []);
+
+            // Create floating balloons
+            useEffect(() => {
+                const createBalloon = () => {
+                    const balloonEmojis = ['🎈', '🎪', '🎭', '🎨', '🎯'];
+                    const balloon = {
+                        id: Date.now() + Math.random(),
+                        left: Math.random() * 100,
+                        emoji: balloonEmojis[Math.floor(Math.random() * balloonEmojis.length)],
+                        animationDelay: Math.random() * 3,
+                        animationDuration: 10 + Math.random() * 6
+                    };
+                    setBalloons(prev => [...prev.slice(-3), balloon]);
+                };
+
+                const balloonInterval = setInterval(createBalloon, 4000);
+                return () => clearInterval(balloonInterval);
+            }, []);
+
+            // Create sparkles
+            useEffect(() => {
+                const createSparkle = () => {
+                    const sparkle = {
+                        id: Date.now() + Math.random(),
+                        left: Math.random() * 100,
+                        top: Math.random() * 100,
+                        animationDelay: Math.random() * 2
+                    };
+                    setSparkles(prev => [...prev.slice(-10), sparkle]);
+                };
+
+                const sparkleInterval = setInterval(createSparkle, 1000);
+                return () => clearInterval(sparkleInterval);
+            }, []);
+
+            const getCurrentMessage = () => {
+                const daysLeft = timeLeft.days;
+                if (daysLeft >= dailyMessages.length) {
+                    return `🎊 ${daysLeft} days until your special day! 🎊`;
+                }
+                return dailyMessages[daysLeft] || dailyMessages[0];
+            };
+
+            return (
+                <div className="min-h-screen moving-bg relative overflow-hidden">
+                    {/* Floating Hearts */}
+                    <div className="floating-hearts">
+                        {hearts.map(heart => (
+                            <div
+                                key={heart.id}
+                                className="heart"
+                                style={{
+                                    left: `${heart.left}%`,
+                                    animationDelay: `${heart.animationDelay}s`,
+                                    animationDuration: `${heart.animationDuration}s`
+                                }}
+                            >
+                                💖
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Floating Balloons */}
+                    <div className="floating-balloons">
+                        {balloons.map(balloon => (
+                            <div
+                                key={balloon.id}
+                                className="balloon"
+                                style={{
+                                    left: `${balloon.left}%`,
+                                    animationDelay: `${balloon.animationDelay}s`,
+                                    animationDuration: `${balloon.animationDuration}s`
+                                }}
+                            >
+                                {balloon.emoji}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Sparkles */}
+                    {sparkles.map(sparkle => (
+                        <div
+                            key={sparkle.id}
+                            className="sparkle"
+                            style={{
+                                left: `${sparkle.left}%`,
+                                top: `${sparkle.top}%`,
+                                animationDelay: `${sparkle.animationDelay}s`
+                            }}
+                        />
+                    ))}
+
+                    <div className="content-wrapper flex flex-col items-center justify-center min-h-screen p-4">
+                        <div className="max-w-4xl w-full message-card rounded-3xl p-8 shadow-2xl">
+                            <h1 className="text-5xl md:text-7xl font-bold text-center dancing-font text-pink-700 mb-8 glow-text">
+                                Birthday Countdown for cutie😘!
+                            </h1>
+                            
+                            <div className="flex justify-center mb-8">
+                                <div className="photo-frame rounded-xl w-full max-w-md aspect-[2/3] bg-gray-100">
+                                    <img 
+                                        src={dailyPhotos[currentPhotoIndex]} 
+                                        alt="Daily countdown" 
+                                        className="w-full h-full object-cover rounded-xl"
+                                    />
+                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4 text-white rounded-b-xl">
+                                        <p className="text-lg font-semibold">Day {timeLeft.days} of waiting</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Daily Message */}
+                            <div className="text-center mb-8">
+                                <div className="bg-gradient-to-r from-pink-100 to-purple-100 rounded-2xl p-6 shadow-lg">
+                                    <p className="text-2xl font-bold dancing-font text-pink-700">
+                                        {getCurrentMessage()}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                                <div className="bg-pink-100 rounded-xl p-6 text-center shadow-lg pulse">
+                                    <div className="text-4xl font-bold text-pink-700">{timeLeft.days}</div>
+                                    <div className="text-lg text-pink-600">Days</div>
+                                </div>
+                                <div className="bg-purple-100 rounded-xl p-6 text-center shadow-lg pulse">
+                                    <div className="text-4xl font-bold text-purple-700">{timeLeft.hours}</div>
+                                    <div className="text-lg text-purple-600">Hours</div>
+                                </div>
+                                <div className="bg-blue-100 rounded-xl p-6 text-center shadow-lg pulse">
+                                    <div className="text-4xl font-bold text-blue-700">{timeLeft.minutes}</div>
+                                    <div className="text-lg text-blue-600">Minutes</div>
+                                </div>
+                                <div className="bg-green-100 rounded-xl p-6 text-center shadow-lg pulse">
+                                    <div className="text-4xl font-bold text-green-700">{timeLeft.seconds}</div>
+                                    <div className="text-lg text-green-600">Seconds</div>
+                                </div>
+                            </div>
+                            
+                            <div className="text-center">
+                                <h2 className="text-3xl font-bold dancing-font text-pink-700 mb-4">
+                                    Until the Special Day! 🎉
+                                </h2>
+                                <p className="text-xl text-gray-700 mb-6">
+                                    {timeLeft.days === 0 ? (
+                                        "It's today! Happy Birthday! 🎂"
+                                    ) : (
+                                        `Only ${timeLeft.days} day${timeLeft.days !== 1 ? 's' : ''} left until July 26th!`
+                                    )}
+                                </p>
+                                
+                                <div className="flex justify-center space-x-4 text-4xl">
+                                    <span className="bounce" style={{ animationDelay: '0.1s' }}>🎈</span>
+                                    <span className="bounce" style={{ animationDelay: '0.3s' }}>🎁</span>
+                                    <span className="bounce" style={{ animationDelay: '0.5s' }}>🎂</span>
+                                    <span className="bounce" style={{ animationDelay: '0.7s' }}>🎊</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="mt-8 text-white text-center">
+                            <p className="text-lg">Made with ❤️ for the most special person</p>
+                            <p className="text-sm opacity-80">© {new Date().getFullYear()} Birthday Countdown by Gaurav (Tumhara waala)</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<CountdownApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
